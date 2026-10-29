@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SwachhDrishti · Staff Portal</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f4f7f5; --card: #ffffff; --ink: #14231b; --muted: #5d6f65; --line: #dfe8e2;
+    --brand: #0f7a4a; --brand-2: #14a76c; --brand-ink: #ffffff; --soft: #e6f4ec;
+    --danger: #c0392b; --warn: #b9770e; --ok: #1e8449; --info: #2471a3;
+    --s1: #2e9e5b; --s2: #8bb832; --s3: #e0a21b; --s4: #e8742a; --s5: #d6322b;
+    --shadow: 0 1px 2px rgba(20,35,27,.06), 0 6px 18px rgba(20,35,27,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1612; --card: #16211b; --ink: #e8f1ec; --muted: #93a79b; --line: #26372e;
+      --brand: #22b673; --brand-2: #2dd68c; --brand-ink: #06150e; --soft: #1b2e24;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif; color: var(--ink); background: var(--bg); }
+  h1, h2, h3 { margin: 0 0 .4em; line-height: 1.25; }
+  h2 { font-size: 1.15rem; } h3 { font-size: 1rem; }
+  a { color: var(--brand); }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); } .small { font-size: .85rem; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .grow { flex: 1 1 auto; }
+
+  /* ---------- top bar ---------- */
+  header { background: linear-gradient(120deg, var(--brand), var(--brand-2)); color: #fff; }
+  .bar { max-width: 1180px; margin: 0 auto; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; letter-spacing: .2px; }
+  .brand .logo { font-size: 1.6rem; filter: drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
+  .brand small { display: block; font-weight: 400; opacity: .85; font-size: .72rem; letter-spacing: .4px; }
+  .chip { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); padding: 5px 12px; border-radius: 999px; font-size: .85rem; }
+  header button { background: rgba(255,255,255,.95); color: #0b4d30; }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 20px 18px 60px; }
+
+  /* ---------- cards & forms ---------- */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-bottom: 18px; }
+  .card > h2:first-child { display: flex; align-items: center; gap: 8px; }
+  label { display: block; font-size: .82rem; color: var(--muted); margin: 10px 0 4px; font-weight: 600; }
+  input, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+  input:focus, select:focus { outline: 2px solid var(--brand-2); outline-offset: 1px; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 9px 14px; cursor: pointer; background: var(--brand); color: var(--brand-ink); transition: transform .05s, filter .15s; }
+  button:hover { filter: brightness(1.08); } button:active { transform: translateY(1px); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  button.ghost { background: transparent; color: var(--brand); border: 1px solid var(--line); }
+  button.danger { background: var(--danger); color: #fff; }
+  button.sm { padding: 5px 10px; font-size: .82rem; border-radius: 8px; }
+
+  .login-wrap { max-width: 460px; margin: 6vh auto 0; }
+  .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 4px; }
+  .roles button { background: var(--bg); color: var(--ink); border: 1px solid var(--line); padding: 12px 6px; }
+  .roles button.active { background: var(--soft); border-color: var(--brand); color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
+  .roles .ico { display: block; font-size: 1.4rem; }
+
+  /* ---------- stats ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat b { display: block; font-size: 1.7rem; line-height: 1.1; }
+  .stat span { color: var(--muted); font-size: .8rem; }
+  .stat.alert b { color: var(--danger); }
+
+  /* ---------- tables ---------- */
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th { text-align: left; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  tr.reopened td { background: rgba(214, 50, 43, .07); }
+  .empty { padding: 26px; text-align: center; color: var(--muted); }
+
+  .sev { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: .85rem; }
+  .sev1 { background: var(--s1); } .sev2 { background: var(--s2); } .sev3 { background: var(--s3); } .sev4 { background: var(--s4); } .sev5 { background: var(--s5); }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .75rem; font-weight: 700; letter-spacing: .3px; }
+  .b-PENDING { background: #fdf1d3; color: #7a5600; } .b-ASSIGNED { background: #dcebfa; color: #1b4f7a; }
+  .b-CLEANED { background: #d8f1e2; color: #14683a; } .b-REOPENED { background: #fadbd8; color: #922b21; }
+  .b-CLOSED { background: #e5e8e8; color: #4d5656; }
+  .b-LOW { background: #d8f1e2; color: #14683a; } .b-MEDIUM { background: #fdf1d3; color: #7a5600; }
+  .b-HIGH { background: #fbe0cc; color: #8a3b08; } .b-CRITICAL { background: #fadbd8; color: #922b21; }
+  .b-ok { background: #d8f1e2; color: #14683a; } .b-bad { background: #fadbd8; color: #922b21; }
+  .b-review { background: #ece3f8; color: #54318a; }
+  @media (prefers-color-scheme: dark) {
+    .b-PENDING { background: #3a3012; color: #f0d27a; } .b-ASSIGNED { background: #15304a; color: #9cc9ee; }
+    .b-CLEANED, .b-LOW, .b-ok { background: #15361f; color: #8fe0ae; } .b-REOPENED, .b-CRITICAL, .b-bad { background: #43191a; color: #f3a29b; }
+    .b-CLOSED { background: #2a3331; color: #b5c1be; } .b-MEDIUM { background: #3a3012; color: #f0d27a; }
+    .b-HIGH { background: #44260f; color: #f3b98a; } .b-review { background: #2b2145; color: #cdb8f5; }
+  }
+  .breach { color: var(--danger); font-weight: 700; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs button { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+  .tabs button.active { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+
+  /* ---------- verify panel ---------- */
+  .verify { border: 2px solid var(--brand); }
+  .result { margin-top: 12px; padding: 12px 14px; border-radius: 10px; font-weight: 600; }
+  .result.ok { background: #d8f1e2; color: #14683a; } .result.bad { background: #fadbd8; color: #922b21; }
+  @media (prefers-color-scheme: dark) { .result.ok { background: #15361f; color: #8fe0ae; } .result.bad { background: #43191a; color: #f3a29b; } }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } .bar { flex-wrap: wrap; } }
+
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #14231b; color: #fff; padding: 11px 18px; border-radius: 10px; box-shadow: var(--shadow); z-index: 50; max-width: 90vw; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  #toast.show { opacity: 1; } #toast.err { background: var(--danger); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand"><span class="logo">🌿</span><div>SwachhDrishti<small>STAFF PORTAL · AKGEC</small></div></div>
+    <div class="grow"></div>
+    <span id="userChip" class="chip hidden"></span>
+    <button id="logoutBtn" class="sm hidden" data-action="logout">Log out</button>
+  </div>
+</header>
+
+<main>
+  <!-- ====================== LOGIN ====================== -->
+  <section id="loginView" class="login-wrap hidden">
+    <div class="card">
+      <h2>Sign in</h2>
+      <p class="muted small" style="margin-top:0">Pick your role. Workers and officers need the staff access code from the server configuration.</p>
+
+      <div class="roles" id="roleBtns">
+        <button data-role="CITIZEN" data-action="pickRole"><span class="ico">🧑</span>Citizen</button>
+        <button data-role="WORKER" data-action="pickRole"><span class="ico">🧹</span>Worker</button>
+        <button data-role="OFFICER" data-action="pickRole"><span class="ico">🏛️</span>Officer</button>
+      </div>
+
+      <label for="email">E-mail</label>
+      <input id="email" type="email" autocomplete="username" placeholder="you@example.com">
+      <label for="name">Name <span class="muted">(first login only)</span></label>
+      <input id="name" type="text" autocomplete="name" placeholder="Your name">
+      <div id="codeBox">
+        <label for="accessCode">Staff access code</label>
+        <input id="accessCode" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <p><button id="loginBtn" data-action="login" style="width:100%">Sign in</button></p>
+
+    </div>
+  </section>
+
+  <!-- ====================== CITIZEN ====================== -->
+  <section id="citizenView" class="hidden">
+    <div class="stats">
+      <div class="stat"><b id="cCoins">0</b><span>🪙 Clean Coins</span></div>
+      <div class="stat"><b id="cReports">0</b><span>Reports filed</span></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>📸 Report garbage</h2>
+        <p class="muted small" style="margin-top:0">Submit a geotagged photo link. The AI rates how severe the garbage is.</p>
+        <label for="photoUrl">Photo URL</label>
+        <input id="photoUrl" type="url" placeholder="https://…/garbage.jpg">
+        <div class="grid2">
+          <div><label for="lat">Latitude</label><input id="lat" type="number" step="any" placeholder="28.6692"></div>
+          <div><label for="lng">Longitude</label><input id="lng" type="number" step="any" placeholder="77.4538"></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="ghost" data-action="useGps" data-target="report">📍 Use my location</button>
+          <button id="submitBtn" data-action="submitReport">Submit report</button>
+        </div>
+        <div id="reportResult"></div>
+      </div>
+      <div class="card">
+        <h2>🗂️ My reports</h2>
+        <div class="tablewrap" id="myReports"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== WORKER ====================== -->
+  <section id="workerView" class="hidden">
+    <div class="stats" id="workerStats"></div>
+
+    <div id="verifyPanel" class="card verify hidden"></div>
+
+    <div class="card">
+      <h2>🧹 Job queue <span class="muted small">(most urgent first)</span></h2>
+      <div class="tabs" id="workerFilter">
+        <button data-action="wFilter" data-f="open" class="active">Open</button>
+        <button data-action="wFilter" data-f="mine">Assigned to me</button>
+        <button data-action="wFilter" data-f="all">All</button>
+      </div>
+      <div class="tablewrap" id="workerQueue"></div>
+    </div>
+  </section>
+
+  <!-- ====================== OFFICER ====================== -->
+  <section id="officerView" class="hidden">
+    <div class="stats" id="officerStats"></div>
+
+    <div class="row" style="margin-bottom:14px">
+      <div class="tabs grow" id="officerTabs" style="margin:0">
+        <button data-action="oTab" data-t="queue" class="active">Priority queue</button>
+        <button data-action="oTab" data-t="hotspots">Hotspots (K-Means)</button>
+        <button data-action="oTab" data-t="chronic">Chronic zones</button>
+        <button data-action="oTab" data-t="logs">Cleanup log</button>
+      </div>
+      <button class="ghost sm" data-action="runTrap" title="Run the 72-hour repeat-complaint check now">⏱️ Run repeat check</button>
+      <button class="ghost sm" data-action="runHotspots" title="Recompute K-Means hotspots now">🗺️ Recompute hotspots</button>
+    </div>
+
+    <div class="card"><div class="tablewrap" id="officerBody"></div></div>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   SwachhDrishti Staff Portal - dependency-free, talks to the Spring Boot
+   REST API with fetch(). Same origin by default; to host this file
+   elsewhere open it as  index.html?api=https://your-server:8080
+   ===================================================================== */
+const BASE = (new URLSearchParams(location.search).get('api') || '').replace(/\/$/, '');
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  token: null, user: null,
+  role: 'CITIZEN',
+  workerFilter: 'open', officerTab: 'queue',
+  complaints: [], zones: [], verifyingId: null,
+};
+
+/* ---------- helpers ---------- */
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtTime = (s) => { if (!s) return '—'; const d = new Date(String(s).replace(/(\.\d{3})\d+/, '$1')); return isNaN(d) ? esc(s) : d.toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); };
+const mapLink = (lat, lng) => `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(lng)}#map=18/${encodeURIComponent(lat)}/${encodeURIComponent(lng)}`;
+const coords = (lat, lng) => `<a href="${mapLink(lat, lng)}" target="_blank" rel="noopener">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}</a>`;
+const sev = (n) => `<span class="sev sev${esc(n)}" title="Severity ${esc(n)} of 5">${esc(n)}</span>`;
+const badge = (txt, cls) => `<span class="badge b-${esc(cls || txt)}">${esc(txt)}</span>`;
+const sla = (c) => {
+  const label = c.slaDeadlineHours === 0 ? 'Immediate' : `${esc(c.slaDeadlineHours)} h`;
+  return c.slaBreached ? `<span class="breach" title="Due ${fmtTime(c.slaDueAt)}">${label} · breached</span>` : `<span title="Due ${fmtTime(c.slaDueAt)}">${label}</span>`;
+};
+const table = (head, rows, emptyMsg) => rows.length
+  ? `<table><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`
+  : `<div class="empty">${emptyMsg}</div>`;
+
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('toast'); t.textContent = msg; t.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = ''; }, 3800);
+}
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (state.token) headers.Authorization = 'Bearer ' + state.token;
+  let res;
+  try { res = await fetch(BASE + path, { ...opts, headers }); }
+  catch (e) { throw new Error('Cannot reach the server. Is the backend running?'); }
+  let data = null;
+  try { data = await res.json(); } catch (_) { /* empty body */ }
+  if (!res.ok) {
+    if (res.status === 401 && state.token) { logout(true); throw new Error('Session expired. Please sign in again.'); }
+    throw new Error((data && data.message) || res.statusText || 'Request failed');
+  }
+  return data;
+}
+const post = (p, body) => api(p, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) });
+
+function getGps() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('This browser has no Geolocation support.'));
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+      (e) => reject(new Error('Could not get your location: ' + e.message)),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  });
+}
+
+/* ---------- session ---------- */
+function saveSession() { sessionStorage.setItem('sd.session', JSON.stringify({ token: state.token, user: state.user })); }
+function loadSession() {
+  try { const s = JSON.parse(sessionStorage.getItem('sd.session') || 'null'); if (s && s.token) { state.token = s.token; state.user = s.user; return true; } } catch (_) {}
+  return false;
+}
+function logout(expired) {
+  state.token = null; state.user = null; sessionStorage.removeItem('sd.session');
+  show(); if (!expired) toast('Signed out.');
+}
+
+/* ---------- view switching ---------- */
+function show() {
+  ['loginView', 'citizenView', 'workerView', 'officerView'].forEach((v) => $(v).classList.add('hidden'));
+  const loggedIn = !!state.user;
+  $('userChip').classList.toggle('hidden', !loggedIn); $('logoutBtn').classList.toggle('hidden', !loggedIn);
+  if (!loggedIn) { $('loginView').classList.remove('hidden'); pickRole(state.role); return; }
+  $('userChip').textContent = `${state.user.name || state.user.email} · ${state.user.role}`;
+  const view = { CITIZEN: 'citizenView', WORKER: 'workerView', OFFICER: 'officerView' }[state.user.role];
+  $(view).classList.remove('hidden');
+  refresh();
+}
+async function refresh() {
+  try {
+    if (state.user.role === 'CITIZEN') await loadCitizen();
+    else if (state.user.role === 'WORKER') await loadWorker();
+    else await loadOfficer();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- login ---------- */
+function pickRole(role) {
+  state.role = role;
+  document.querySelectorAll('#roleBtns button').forEach((b) => b.classList.toggle('active', b.dataset.role === role));
+  $('codeBox').classList.toggle('hidden', role === 'CITIZEN');
+}
+async function doLogin() {
+  const email = $('email').value.trim();
+  if (!email) return toast('Enter your e-mail.', true);
+  $('loginBtn').disabled = true;
+  try {
+    const r = await post('/api/auth/login', { email, name: $('name').value.trim(), role: state.role, accessCode: $('accessCode').value });
+    state.token = r.token; state.user = { userId: r.userId, name: r.name, email: r.email, role: r.role };
+    saveSession(); $('accessCode').value = ''; show();
+  } catch (e) { toast(e.message, true); }
+  finally { $('loginBtn').disabled = false; }
+}
+
+/* ---------- citizen ---------- */
+async function loadCitizen() {
+  const [me, mine] = await Promise.all([api('/api/auth/me'), api('/api/complaints/mine')]);
+  $('cCoins').textContent = me.cleanCoins; $('cReports').textContent = me.totalReports;
+  $('myReports').innerHTML = table(['#', 'Type', 'Sev', 'Status', 'Filed'],
+    mine.map((c) => `<tr><td>${esc(c.complaintId)}</td><td>${esc(c.garbageType)}</td><td>${sev(c.severity)}</td><td>${badge(c.status)}</td><td>${fmtTime(c.createdAt)}</td></tr>`),
+    'No reports yet — file your first one!');
+}
+async function submitReport() {
+  const photoUrl = $('photoUrl').value.trim(), latitude = parseFloat($('lat').value), longitude = parseFloat($('lng').value);
+  if (!photoUrl || isNaN(latitude) || isNaN(longitude)) return toast('Photo URL, latitude and longitude are required.', true);
+  $('submitBtn').disabled = true;
+  try {
+    const c = await post('/api/complaints', { photoUrl, latitude, longitude });
+    $('reportResult').innerHTML = `<div class="result ok">Report #${esc(c.complaintId)} received · ${esc(c.garbageType)} · coverage ${esc(Math.round(c.boundingBoxAreaPct))}% · severity ${sev(c.severity)} · SLA ${sla(c)}${c.needsReview ? ' ' + badge('needs review', 'review') : ''}</div>`;
+    $('photoUrl').value = '';
+    await loadCitizen();
+  } catch (e) { toast(e.message, true); }
+  finally { $('submitBtn').disabled = false; }
+}
+async function useGpsForReport() {
+  try { const g = await getGps(); $('lat').value = g.lat.toFixed(6); $('lng').value = g.lng.toFixed(6); toast(`Location captured (±${Math.round(g.accuracy)} m)`); }
+  catch (e) { toast(e.message, true); }
+}
+
+/* ---------- worker ---------- */
+async function loadWorker() {
+  const [complaints, zones] = await Promise.all([api('/api/complaints'), api('/api/zones')]);
+  state.complaints = complaints; state.zones = zones;
+  const mine = complaints.filter((c) => c.assignedWorkerId === state.user.userId && c.status === 'ASSIGNED').length;
+  const open = complaints.filter((c) => c.status === 'PENDING' || c.status === 'REOPENED').length;
+  const reopened = complaints.filter((c) => c.status === 'REOPENED').length;
+  const breached = complaints.filter((c) => c.slaBreached).length;
+  $('workerStats').innerHTML = `
+    <div class="stat"><b>${open}</b><span>Open jobs</span></div>
+    <div class="stat"><b>${mine}</b><span>Assigned to me</span></div>
+    <div class="stat ${reopened ? 'alert' : ''}"><b>${reopened}</b><span>Reopened</span></div>
+    <div class="stat ${breached ? 'alert' : ''}"><b>${breached}</b><span>SLA breached</span></div>`;
+  renderWorkerQueue();
+  if (state.verifyingId) renderVerifyPanel();
+}
+function renderWorkerQueue() {
+  const f = state.workerFilter;
+  const list = state.complaints.filter((c) =>
+    f === 'all' ? true : f === 'mine' ? c.assignedWorkerId === state.user.userId && c.status === 'ASSIGNED' : (c.status === 'PENDING' || c.status === 'REOPENED'));
+  document.querySelectorAll('#workerFilter button').forEach((b) => b.classList.toggle('active', b.dataset.f === f));
+  $('workerQueue').innerHTML = table(['#', 'Type', 'Sev', 'Coverage', 'SLA', 'Status', 'Location', 'Photo', ''],
+    list.map((c) => {
+      const mineJob = c.assignedWorkerId === state.user.userId;
+      const open = c.status === 'PENDING' || c.status === 'REOPENED';
+      const takenByOther = c.status === 'ASSIGNED' && !mineJob;
+      let actions = '';
+      if (open) actions += `<button class="sm ghost" data-action="assign" data-id="${esc(c.complaintId)}">Claim</button> `;
+      if ((open || (c.status === 'ASSIGNED' && mineJob))) actions += `<button class="sm" data-action="openVerify" data-id="${esc(c.complaintId)}">Mark cleaned</button>`;
+      if (takenByOther) actions = `<span class="muted small">with ${esc(c.assignedWorkerName)}</span>`;
+      return `<tr class="${c.status === 'REOPENED' ? 'reopened' : ''}">
+        <td>${esc(c.complaintId)}</td><td>${esc(c.garbageType)} ${c.needsReview ? badge('review', 'review') : ''}</td><td>${sev(c.severity)}</td>
+        <td>${esc(Math.round(c.boundingBoxAreaPct))}%</td><td>${sla(c)}</td><td>${badge(c.status)}</td>
+        <td>${coords(c.latitude, c.longitude)}</td>
+        <td>${/^https?:\/\//.test(c.photoUrl) ? `<a href="${esc(c.photoUrl)}" target="_blank" rel="noopener">view</a>` : '—'}</td>
+        <td style="white-space:nowrap">${actions}</td></tr>`;
+    }), 'Nothing here. 🎉');
+}
+async function assignJob(id) {
+  try { await post(`/api/worker/complaints/${id}/assign`); toast(`Complaint #${id} is yours.`); await loadWorker(); }
+  catch (e) { toast(e.message, true); }
+}
+function openVerify(id) { state.verifyingId = Number(id); renderVerifyPanel(); $('verifyPanel').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+function renderVerifyPanel() {
+  const c = state.complaints.find((x) => x.complaintId === state.verifyingId);
+  const p = $('verifyPanel');
+  if (!c) { p.classList.add('hidden'); return; }
+  const zoneList = state.zones.map((z) => `<li>${esc(z.zoneName)} — ${coords(z.latitude, z.longitude)} · radius ${esc(z.radiusMeters)} m</li>`).join('');
+  p.classList.remove('hidden');
+  p.innerHTML = `
+    <h2>📍 Confirm cleanup — complaint #${esc(c.complaintId)}</h2>
+    <p class="muted small" style="margin-top:0">Your live GPS is sent to the server, which measures the Haversine distance to the nearest authorised disposal zone. You must be within the zone radius. The result cannot be overridden here.</p>
+    <b class="small">Authorised zones</b><ul class="small" style="margin:4px 0 12px 18px;padding:0">${zoneList}</ul>
+    <div class="row"><button id="gpsVerifyBtn" data-action="gpsVerify">📡 Use my GPS & confirm</button><button class="ghost" data-action="closeVerify">Cancel</button></div>
+    <div id="verifyResult"></div>`;
+}
+async function sendVerify(lat, lng) {
+  const box = $('verifyResult'); box.innerHTML = '<div class="result">Checking position…</div>';
+  try {
+    const r = await post('/api/worker/verify', { complaintId: state.verifyingId, workerLatitude: lat, workerLongitude: lng });
+    box.innerHTML = `<div class="result ${r.verified ? 'ok' : 'bad'}">${r.verified ? '✅' : '⛔'} ${esc(r.message)} <span class="small">(${esc(r.distanceMeters)} m from ${esc(r.zoneName)})</span></div>`;
+    if (r.verified) { toast('Cleanup verified.'); state.verifyingId = null; setTimeout(() => { $('verifyPanel').classList.add('hidden'); }, 2500); await loadWorker(); }
+  } catch (e) { box.innerHTML = `<div class="result bad">${esc(e.message)}</div>`; }
+}
+async function gpsVerify() {
+  try { const g = await getGps(); await sendVerify(g.lat, g.lng); } catch (e) { $('verifyResult').innerHTML = `<div class="result bad">${esc(e.message)}</div>`; }
+}
+/* ---------- officer ---------- */
+async function loadOfficer() {
+  const stats = await api('/api/officer/stats');
+  const cards = [
+    ['pending', 'Pending'], ['assigned', 'Assigned'], ['cleaned', 'Cleaned'], ['reopened', 'Reopened ⚠'],
+    ['chronicZones', 'Chronic zones'], ['rejectedCleanupAttempts', 'Rejected cleanups'], ['total', 'Total complaints']];
+  $('officerStats').innerHTML = cards.map(([k, label]) =>
+    `<div class="stat ${(k === 'reopened' || k === 'rejectedCleanupAttempts') && stats[k] ? 'alert' : ''}"><b>${esc(stats[k] ?? 0)}</b><span>${label}</span></div>`).join('');
+  await renderOfficerTab();
+}
+async function renderOfficerTab() {
+  const t = state.officerTab, body = $('officerBody');
+  document.querySelectorAll('#officerTabs button').forEach((b) => b.classList.toggle('active', b.dataset.t === t));
+  body.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    if (t === 'queue') {
+      const list = await api('/api/complaints');
+      body.innerHTML = table(['#', 'Type', 'Sev', 'Coverage', 'SLA', 'Status', 'Worker', 'Location', 'Filed'],
+        list.map((c) => `<tr class="${c.status === 'REOPENED' ? 'reopened' : ''}"><td>${esc(c.complaintId)}</td><td>${esc(c.garbageType)} ${c.needsReview ? badge('review', 'review') : ''}</td><td>${sev(c.severity)}</td>
+          <td>${esc(Math.round(c.boundingBoxAreaPct))}%</td><td>${sla(c)}</td><td>${badge(c.status)}</td><td>${esc(c.assignedWorkerName || '—')}</td>
+          <td>${coords(c.latitude, c.longitude)}</td><td>${fmtTime(c.createdAt)}</td></tr>`), 'No complaints yet.');
+    } else if (t === 'hotspots') {
+      const list = (await api('/api/officer/hotspots')).sort((a, b) => b.complaintCount - a.complaintCount);
+      body.innerHTML = table(['Risk', 'Cluster centre', 'Complaints', 'Generated'],
+        list.map((h) => `<tr><td>${badge(h.riskLevel)}</td><td>${coords(h.latitude, h.longitude)}</td><td><b>${esc(h.complaintCount)}</b></td><td>${fmtTime(h.generatedAt)}</td></tr>`),
+        'No hotspots yet. K-Means needs enough complaint history — or press “Recompute hotspots”.');
+    } else if (t === 'chronic') {
+      const list = await api('/api/officer/chronic-zones');
+      body.innerHTML = table(['Location', 'Repeat count', 'Last flagged'],
+        list.map((z) => `<tr><td>${coords(z.latitude, z.longitude)}</td><td><b>${esc(z.repeatCount)}</b></td><td>${fmtTime(z.flaggedAt)}</td></tr>`),
+        'No chronic zones. These appear when the same spot re-triggers the 72-hour trap.');
+    } else {
+      const list = await api('/api/officer/disposal-logs');
+      body.innerHTML = table(['When', 'Complaint', 'Worker', 'Worker position', 'Result'],
+        list.map((l) => `<tr><td>${fmtTime(l.disposedAt)}</td><td>#${esc(l.complaintId)}</td><td>${esc(l.workerName)}</td><td>${coords(l.workerLatitude, l.workerLongitude)}</td>
+          <td>${l.authorised ? badge('authorised', 'ok') : badge('rejected', 'bad')}</td></tr>`), 'No cleanup attempts yet.');
+    }
+  } catch (e) { body.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+async function runTrap() {
+  try { const r = await post('/api/officer/repeat-monitor/run'); toast(r.ticketsReopened ? `${r.ticketsReopened} ticket(s) reopened.` : 'No repeat complaints found.'); await loadOfficer(); }
+  catch (e) { toast(e.message, true); }
+}
+async function runHotspots() {
+  try { const r = await post('/api/officer/hotspots/refresh'); toast(r.clustersWritten ? `${r.clustersWritten} hotspot cluster(s) computed.` : 'Not enough complaints yet.'); state.officerTab = 'hotspots'; await loadOfficer(); }
+  catch (e) { toast(e.message, true); }
+}
+
+/* ---------- event delegation ---------- */
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-action]'); if (!el) return;
+  const d = el.dataset;
+  switch (d.action) {
+    case 'pickRole': pickRole(d.role); break;
+    case 'login': doLogin(); break;
+    case 'logout': logout(); break;
+    case 'useGps': useGpsForReport(); break;
+    case 'submitReport': submitReport(); break;
+    case 'wFilter': state.workerFilter = d.f; renderWorkerQueue(); break;
+    case 'assign': assignJob(d.id); break;
+    case 'openVerify': openVerify(d.id); break;
+    case 'closeVerify': state.verifyingId = null; $('verifyPanel').classList.add('hidden'); break;
+    case 'gpsVerify': gpsVerify(); break;
+    case 'oTab': state.officerTab = d.t; renderOfficerTab(); break;
+    case 'runTrap': runTrap(); break;
+    case 'runHotspots': runHotspots(); break;
+  }
+});
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !$('loginView').classList.contains('hidden') && ev.target.tagName === 'INPUT') doLogin(); });
+
+/* ---------- boot ---------- */
+(async function init() {
+  try { state.config = await api('/api/public/config'); } catch (_) { /* server may be down; login will say so */ }
+  loadSession();
+  show();
+})();
+</script>
+</body>
+</html>

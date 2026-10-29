@@ -1,0 +1,55 @@
+
+# SwachhDrishti backend configuration
+spring.application.name=swachhdrishti-backend
+server.port=${PORT:8080}
+
+# Database (MySQL 8)
+spring.datasource.url=${DB_URL:jdbc:mysql://localhost:3306/swachhdrishti?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+spring.datasource.username=${DB_USERNAME:}
+spring.datasource.password=${DB_PASSWORD:}
+
+# JPA
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.open-in-view=false
+
+# JWT authentication
+jwt.secret=${JWT_SECRET}
+jwt.expiry-hours=${JWT_EXPIRY_HOURS:24}
+
+# Staff login
+staff.access-code=${STAFF_ACCESS_CODE:}
+
+# Roboflow / YOLOv11
+roboflow.mock=${ROBOFLOW_MOCK:true}
+roboflow.api.key=${ROBOFLOW_API_KEY:}
+roboflow.model.url=${ROBOFLOW_MODEL_URL:}
+roboflow.timeout-ms=${ROBOFLOW_TIMEOUT_MS:3000}
+roboflow.confidence-threshold=${ROBOFLOW_CONFIDENCE:0.495}
+
+# Accountability jobs
+app.repeat-monitor.window-hours=72
+app.repeat-monitor.radius-meters=50
+app.repeat-monitor.interval-ms=21600000
+app.repeat-monitor.initial-delay-ms=60000
+app.repeat-monitor.grace-hours=6
+app.repeat-monitor.chronic-threshold=2
+
+app.hotspot.k=5
+app.hotspot.min-complaints=5
+app.hotspot.interval-ms=604800000
+app.hotspot.initial-delay-ms=120000
+
+# CORS
+app.cors.allowed-origins=${CORS_ORIGINS:*}
+
+# Demo mode
+app.demo-mode=${DEMO_MODE:false}
+
+# Health endpoint
+management.endpoints.web.exposure.include=health
+
+# Photo uploads
+app.upload-dir=${UPLOAD_DIR:uploads}
+spring.servlet.multipart.max-file-size=8MB
+spring.servlet.multipart.max-request-size=8MB

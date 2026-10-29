@@ -1,0 +1,26 @@
+
+# Build output
+target/
+*.class
+*.jar
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+application.properties
+application-local.properties
+application-h2.properties
+*.pem
+*.key
+firebase-service-account*.json
+
+# Uploaded photos
+uploads/
