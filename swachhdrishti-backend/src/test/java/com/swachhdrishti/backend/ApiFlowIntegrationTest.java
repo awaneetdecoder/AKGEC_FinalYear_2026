@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,8 +17,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -30,8 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("h2")
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:itest;MODE=MySQL;DB_CLOSE_DELAY=-1",
-        "app.demo-mode=false",                       // start from an empty database
         "staff.access-code=test-code",
+        "app.upload-dir=target/test-uploads",
         "app.hotspot.initial-delay-ms=3600000",      // keep background jobs out of the way;
         "app.repeat-monitor.initial-delay-ms=3600000" // tests trigger them explicitly
 })
@@ -44,11 +47,21 @@ class ApiFlowIntegrationTest {
 
     // ------------------------------------------------------------------ helpers
 
-    private String login(String email, String role, String accessCode) throws Exception {
-        String body = mapper.writeValueAsString(Map.of(
-                "email", email, "name", "Test " + role, "role", role, "accessCode", accessCode));
-        MvcResult r = mvc.perform(post("/api/auth/login").contentType(JSON).content(body))
-                .andExpect(status().isOk()).andReturn();
+    private static final String PASSWORD = "Str0ng-pass-2026";
+
+    /** Creates an account, then signs in with the same details; returns the sign-in token. */
+    private String signUpAndLogin(String email, String role, String accessCode) throws Exception {
+        String reg = mapper.writeValueAsString(Map.of(
+                "name", "Test " + role, "email", email, "password", PASSWORD,
+                "role", role, "accessCode", accessCode));
+        mvc.perform(post("/api/auth/register").contentType(JSON).content(reg))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value(role));
+
+        String login = mapper.writeValueAsString(Map.of("email", email, "password", PASSWORD));
+        MvcResult r = mvc.perform(post("/api/auth/login").contentType(JSON).content(login))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value(role)).andReturn();
         return mapper.readTree(r.getResponse().getContentAsString()).get("token").asText();
     }
 
@@ -82,7 +95,6 @@ class ApiFlowIntegrationTest {
         mvc.perform(get("/api/complaints")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/complaints").header("Authorization", "Bearer not-a-real-token"))
                 .andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/public/config")).andExpect(status().isOk());
     }
 
     @Test
@@ -94,17 +106,43 @@ class ApiFlowIntegrationTest {
     }
 
     @Test
-    void staffCannotSelfDeclareWithoutTheAccessCode() throws Exception {
+    void staffCannotRegisterWithoutTheRegistrationCode() throws Exception {
         String body = mapper.writeValueAsString(Map.of(
-                "email", "sneaky@example.com", "name", "Sneaky", "role", "OFFICER", "accessCode", "guess"));
-        mvc.perform(post("/api/auth/login").contentType(JSON).content(body))
+                "name", "Sneaky", "email", "sneaky@example.com", "password", PASSWORD,
+                "role", "OFFICER", "accessCode", "guess"));
+        mvc.perform(post("/api/auth/register").contentType(JSON).content(body))
                 .andExpect(status().isForbidden());
     }
 
     @Test
+    void duplicateEmailAndWrongPasswordAreRejected() throws Exception {
+        signUpAndLogin("dup@example.com", "CITIZEN", "");
+
+        String again = mapper.writeValueAsString(Map.of(
+                "name", "Dup", "email", "DUP@example.com", "password", PASSWORD,
+                "role", "CITIZEN", "accessCode", ""));
+        mvc.perform(post("/api/auth/register").contentType(JSON).content(again))
+                .andExpect(status().isConflict());
+
+        String wrong = mapper.writeValueAsString(Map.of("email", "dup@example.com", "password", "not-the-password"));
+        mvc.perform(post("/api/auth/login").contentType(JSON).content(wrong))
+                .andExpect(status().isUnauthorized());
+
+        String unknown = mapper.writeValueAsString(Map.of("email", "nobody@example.com", "password", PASSWORD));
+        mvc.perform(post("/api/auth/login").contentType(JSON).content(unknown))
+                .andExpect(status().isUnauthorized());
+
+        String shortPw = mapper.writeValueAsString(Map.of(
+                "name", "Short", "email", "short@example.com", "password", "abc",
+                "role", "CITIZEN", "accessCode", ""));
+        mvc.perform(post("/api/auth/register").contentType(JSON).content(shortPw))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void rolesAreEnforced() throws Exception {
-        String citizen = login("roles-citizen@example.com", "CITIZEN", "");
-        String worker = login("roles-worker@example.com", "WORKER", "test-code");
+        String citizen = signUpAndLogin("roles-citizen@example.com", "CITIZEN", "");
+        String worker = signUpAndLogin("roles-worker@example.com", "WORKER", "test-code");
 
         mvc.perform(get("/api/officer/stats").header("Authorization", bearer(citizen))).andExpect(status().isForbidden());
         mvc.perform(get("/api/officer/stats").header("Authorization", bearer(worker))).andExpect(status().isForbidden());
@@ -114,8 +152,8 @@ class ApiFlowIntegrationTest {
 
     @Test
     void inputValidationReturnsCleanJsonErrors() throws Exception {
-        String citizen = login("valid-citizen@example.com", "CITIZEN", "");
-        String worker = login("valid-worker@example.com", "WORKER", "test-code");
+        String citizen = signUpAndLogin("valid-citizen@example.com", "CITIZEN", "");
+        String worker = signUpAndLogin("valid-worker@example.com", "WORKER", "test-code");
 
         String badLat = mapper.writeValueAsString(Map.of(
                 "photoUrl", "https://example.com/a.jpg", "latitude", 123.0, "longitude", 77.0));
@@ -132,12 +170,36 @@ class ApiFlowIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void photoUploadAndDownloadRoundTrip() throws Exception {
+        String citizen = signUpAndLogin("photo-citizen@example.com", "CITIZEN", "");
+        byte[] bytes = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 1, 2, 3, 4};
+        MockMultipartFile photo = new MockMultipartFile("file", "pile.jpg", "image/jpeg", bytes);
+
+        MvcResult r = mvc.perform(multipart("/api/uploads").file(photo).header("Authorization", bearer(citizen)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").isString())
+                .andReturn();
+        String url = mapper.readTree(r.getResponse().getContentAsString()).get("url").asText();
+        String path = url.substring(url.indexOf("/uploads/"));
+
+        // The uploaded file can be fetched back (no token needed, like an <img> tag).
+        mvc.perform(get(path)).andExpect(status().isOk()).andExpect(content().bytes(bytes));
+
+        // Wrong file type and missing token are refused; unknown or malicious names give 404.
+        MockMultipartFile text = new MockMultipartFile("file", "x.txt", "text/plain", "hello".getBytes());
+        mvc.perform(multipart("/api/uploads").file(text).header("Authorization", bearer(citizen)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(multipart("/api/uploads").file(photo)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/uploads/not-a-real-photo.jpg")).andExpect(status().isNotFound());
+    }
+
     /** The paper's full story: report -> reject far worker -> accept near worker -> reward -> repeat trap. */
     @Test
     void fullAccountabilityFlow() throws Exception {
-        String citizen = login("flow-citizen@example.com", "CITIZEN", "");
-        String worker = login("flow-worker@example.com", "WORKER", "test-code");
-        String officer = login("flow-officer@example.com", "OFFICER", "test-code");
+        String citizen = signUpAndLogin("flow-citizen@example.com", "CITIZEN", "");
+        String worker = signUpAndLogin("flow-worker@example.com", "WORKER", "test-code");
+        String officer = signUpAndLogin("flow-officer@example.com", "OFFICER", "test-code");
 
         // 1. Citizen reports garbage; the AI pipeline assigns a severity and SLA.
         double spotLat = 28.5000, spotLng = 77.2000;

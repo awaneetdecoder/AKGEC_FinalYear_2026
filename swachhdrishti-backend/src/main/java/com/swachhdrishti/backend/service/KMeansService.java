@@ -78,11 +78,11 @@ public class KMeansService {
     }
 
     private List<Point> initializeCenters(List<Point> points, int k) {
-        // Simple random-pick initialization. Good enough for a small demo
+        // Simple random-pick initialization. Good enough for a small data set
         // dataset; if you need more stable results later, look into
         // "K-Means++" initialization as an upgrade.
         List<Point> shuffled = new ArrayList<>(points);
-        java.util.Collections.shuffle(shuffled, new Random(42)); // fixed seed = reproducible demo results
+        java.util.Collections.shuffle(shuffled, new Random(42)); // fixed seed = reproducible results
         return new ArrayList<>(shuffled.subList(0, k));
     }
 

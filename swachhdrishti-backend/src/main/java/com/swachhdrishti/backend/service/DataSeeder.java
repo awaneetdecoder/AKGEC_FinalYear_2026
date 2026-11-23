@@ -16,21 +16,22 @@ import java.time.LocalDateTime;
 import java.util.Random;
 
 /**
- * Runs once at start-up and only adds data that is missing, so restarting is
- * always safe.
+ * Runs once at start-up and only adds data that is missing, so restarting is safe.
  *
  *  1. Always: the authorised disposal zones the worker GPS check needs.
- *  2. Only when app.demo-mode=true: three demo accounts and ~40 sample
- *     complaints in five clusters, so the dashboards and the K-Means
- *     hotspot view have something to show straight away.
+ *  2. Only when app.seed-sample-data=true (env SEED_SAMPLE_DATA): ~40 placeholder
+ *     complaints in five clusters so the hotspot (K-Means) view has data to show.
+ *     They are test data, not real citizen reports. Off by default.
+ *
+ * No user accounts are ever created here: everyone signs up themselves.
  */
 @Component
 public class DataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
-    // {latitude, longitude, number of complaints} - five areas around Ghaziabad.
-    private static final double[][] DEMO_CLUSTERS = {
+    // {latitude, longitude, number of complaints}
+    private static final double[][] SAMPLE_CLUSTERS = {
             {28.6692, 77.4538, 14},
             {28.6551, 77.3910, 9},
             {28.6870, 77.4210, 5},
@@ -44,8 +45,8 @@ public class DataSeeder implements CommandLineRunner {
     private final SeverityService severityService;
     private final HotspotSchedulerService hotspotSchedulerService;
 
-    @Value("${app.demo-mode:false}")
-    private boolean demoMode;
+    @Value("${app.seed-sample-data:false}")
+    private boolean seedSampleData;
 
     public DataSeeder(DisposalZoneRepository disposalZoneRepository,
                       UserRepository userRepository,
@@ -62,8 +63,8 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
         seedDisposalZones();
-        if (demoMode) {
-            seedDemoData();
+        if (seedSampleData) {
+            seedSampleComplaints();
         }
     }
 
@@ -85,26 +86,31 @@ public class DataSeeder implements CommandLineRunner {
         return z;
     }
 
-    private void seedDemoData() {
-        User citizen = ensureUser("citizen@swachh.demo", "Demo Citizen", User.Role.CITIZEN);
-        ensureUser("worker@swachh.demo", "Demo Worker", User.Role.WORKER);
-        ensureUser("officer@swachh.demo", "Demo Officer", User.Role.OFFICER);
-
+    private void seedSampleComplaints() {
         if (complaintRepository.count() > 0) return;
 
-        Random random = new Random(2026); // fixed seed = reproducible demo
+        // A placeholder owner without a password: nobody can sign in as it.
+        User owner = userRepository.findByEmail("sample-data@swachhdrishti.invalid").orElseGet(() -> {
+            User u = new User();
+            u.setEmail("sample-data@swachhdrishti.invalid");
+            u.setName("Sample data");
+            u.setRole(User.Role.CITIZEN);
+            return userRepository.save(u);
+        });
+
+        Random random = new Random(2026); // fixed seed = reproducible
         String[] types = {"Plastic", "Organic", "Construction Debris", "Mixed", "E-Waste"};
         int n = 0;
 
-        for (double[] cluster : DEMO_CLUSTERS) {
+        for (double[] cluster : SAMPLE_CLUSTERS) {
             for (int i = 0; i < (int) cluster[2]; i++) {
                 n++;
                 double areaPct = 1 + random.nextInt(70);
                 int severity = severityService.calculateSeverity(areaPct);
 
                 Complaint c = new Complaint();
-                c.setCitizen(citizen);
-                c.setPhotoUrl("https://placehold.co/600x400?text=Garbage+" + n);
+                c.setCitizen(owner);
+                c.setPhotoUrl("https://placehold.co/600x400?text=Sample+" + n);
                 // ~ +/- 150 m of scatter around the cluster centre
                 c.setLatitude(cluster[0] + (random.nextDouble() - 0.5) * 0.003);
                 c.setLongitude(cluster[1] + (random.nextDouble() - 0.5) * 0.003);
@@ -118,20 +124,10 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
 
-        citizen.setTotalReports(n);
-        userRepository.save(citizen);
+        owner.setTotalReports(n);
+        userRepository.save(owner);
 
         int clusters = hotspotSchedulerService.generateHotspots();
-        log.info("SwachhDrishti DEMO MODE: seeded 3 demo users, {} complaints, {} hotspot clusters.", n, clusters);
-    }
-
-    private User ensureUser(String email, String name, User.Role role) {
-        return userRepository.findByEmail(email).orElseGet(() -> {
-            User u = new User();
-            u.setEmail(email);
-            u.setName(name);
-            u.setRole(role);
-            return userRepository.save(u);
-        });
+        log.info("SwachhDrishti: seeded {} sample complaints and {} hotspot clusters.", n, clusters);
     }
 }

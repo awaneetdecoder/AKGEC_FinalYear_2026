@@ -18,7 +18,7 @@ import java.io.IOException;
  * Deliberately NOT filtered:
  *  - anything outside /api/** (the Staff Portal's static files, /actuator/health)
  *  - CORS preflight (OPTIONS) requests, which browsers send WITHOUT a token
- *  - the login and public-config endpoints
+ *  - the sign-in and sign-up endpoints
  */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -34,7 +34,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
         if (!path.startsWith("/api/")) return true;
-        return path.equals("/api/auth/login") || path.startsWith("/api/public/");
+        return path.equals("/api/auth/login") || path.equals("/api/auth/register");
     }
 
     @Override

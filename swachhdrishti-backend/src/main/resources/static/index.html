@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SwachhDrishti · Staff Portal</title>
+<title>SwachhDrishti</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E">
 <style>
   :root {
@@ -56,11 +56,29 @@
   button.danger { background: var(--danger); color: #fff; }
   button.sm { padding: 5px 10px; font-size: .82rem; border-radius: 8px; }
 
-  .login-wrap { max-width: 460px; margin: 6vh auto 0; }
+  .auth { max-width: 980px; margin: 4vh auto 0; display: grid; grid-template-columns: 1.05fr 1fr; gap: 22px; align-items: stretch; }
+  .hero { background: linear-gradient(150deg, var(--brand), var(--brand-2)); color: #fff; border-radius: 18px; padding: 34px 30px; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: center; }
+  .hero h1 { font-size: 1.85rem; margin-bottom: .5em; }
+  .hero p { opacity: .92; margin: 0 0 18px; }
+  .hero ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .hero li { display: flex; gap: 12px; align-items: flex-start; font-size: .95rem; }
+  .hero li span.ic { background: rgba(255,255,255,.2); border-radius: 10px; width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  .hero li b { display: block; }
+  .authcard { margin: 0; padding: 26px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 14px; }
+  .seg button { background: transparent; color: var(--muted); border-radius: 9px; padding: 9px; }
+  .seg button.active { background: var(--brand); color: var(--brand-ink); }
   .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 4px; }
   .roles button { background: var(--bg); color: var(--ink); border: 1px solid var(--line); padding: 12px 6px; }
   .roles button.active { background: var(--soft); border-color: var(--brand); color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
   .roles .ico { display: block; font-size: 1.4rem; }
+  .pw { position: relative; }
+  .pw input { padding-right: 70px; }
+  .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: transparent; color: var(--brand); padding: 6px 10px; font-size: .8rem; }
+  .formerr { color: var(--danger); font-size: .85rem; min-height: 1.2em; margin-top: 10px; }
+  .switch { text-align: center; margin: 12px 0 0; font-size: .9rem; color: var(--muted); }
+  .switch a { cursor: pointer; font-weight: 600; }
+  @media (max-width: 820px) { .auth { grid-template-columns: 1fr; margin-top: 1vh; } .hero { padding: 22px; } .hero h1 { font-size: 1.4rem; } .hero ul { display: none; } }
 
   /* ---------- stats ---------- */
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px; margin-bottom: 18px; }
@@ -117,7 +135,7 @@
 
 <header>
   <div class="bar">
-    <div class="brand"><span class="logo">🌿</span><div>SwachhDrishti<small>STAFF PORTAL · AKGEC</small></div></div>
+    <div class="brand"><span class="logo">🌿</span><div>SwachhDrishti<small>CLEANER CITIES, ACCOUNTABLE SERVICE</small></div></div>
     <div class="grow"></div>
     <span id="userChip" class="chip hidden"></span>
     <button id="logoutBtn" class="sm hidden" data-action="logout">Log out</button>
@@ -126,27 +144,62 @@
 
 <main>
   <!-- ====================== LOGIN ====================== -->
-  <section id="loginView" class="login-wrap hidden">
-    <div class="card">
-      <h2>Sign in</h2>
-      <p class="muted small" style="margin-top:0">Pick your role. Workers and officers need the staff access code from the server configuration.</p>
+  <section id="loginView" class="auth hidden">
+    <div class="hero">
+      <h1>See it. Report it.<br>Get it cleaned.</h1>
+      <p>One platform for citizens, field workers and city officers to keep neighbourhoods clean — with proof at every step.</p>
+      <ul>
+        <li><span class="ic">📸</span><div><b>Photo-based severity</b>AI rates how bad the garbage is, so the worst spots are cleaned first.</div></li>
+        <li><span class="ic">📍</span><div><b>GPS-verified cleanups</b>A job counts as done only when the worker is at an authorised site.</div></li>
+        <li><span class="ic">🪙</span><div><b>Rewards for citizens</b>Earn Clean Coins for every report that gets verified.</div></li>
+      </ul>
+    </div>
 
-      <div class="roles" id="roleBtns">
-        <button data-role="CITIZEN" data-action="pickRole"><span class="ico">🧑</span>Citizen</button>
-        <button data-role="WORKER" data-action="pickRole"><span class="ico">🧹</span>Worker</button>
-        <button data-role="OFFICER" data-action="pickRole"><span class="ico">🏛️</span>Officer</button>
+    <div class="card authcard">
+      <div class="seg" id="authTabs">
+        <button data-action="authTab" data-tab="login" class="active">Sign in</button>
+        <button data-action="authTab" data-tab="register">Create account</button>
       </div>
 
-      <label for="email">E-mail</label>
-      <input id="email" type="email" autocomplete="username" placeholder="you@example.com">
-      <label for="name">Name <span class="muted">(first login only)</span></label>
-      <input id="name" type="text" autocomplete="name" placeholder="Your name">
-      <div id="codeBox">
-        <label for="accessCode">Staff access code</label>
-        <input id="accessCode" type="password" autocomplete="current-password" placeholder="••••••••">
+      <!-- sign in -->
+      <div id="loginForm">
+        <h2>Welcome back</h2>
+        <label for="liEmail">E-mail</label>
+        <input id="liEmail" type="email" autocomplete="username" placeholder="you@example.com">
+        <label for="liPass">Password</label>
+        <div class="pw"><input id="liPass" type="password" autocomplete="current-password" placeholder="Your password"><button type="button" data-action="togglePw" data-for="liPass">Show</button></div>
+        <div class="formerr" id="liErr"></div>
+        <p style="margin:6px 0 0"><button id="loginBtn" data-action="login" style="width:100%">Sign in</button></p>
+        <p class="switch">New here? <a data-action="authTab" data-tab="register">Create an account</a></p>
       </div>
-      <p><button id="loginBtn" data-action="login" style="width:100%">Sign in</button></p>
 
+      <!-- sign up -->
+      <div id="registerForm" class="hidden">
+        <h2>Create your account</h2>
+        <label>I am a…</label>
+        <div class="roles" id="roleBtns">
+          <button data-role="CITIZEN" data-action="pickRole" class="active"><span class="ico">🧑</span>Citizen</button>
+          <button data-role="WORKER" data-action="pickRole"><span class="ico">🧹</span>Worker</button>
+          <button data-role="OFFICER" data-action="pickRole"><span class="ico">🏛️</span>Officer</button>
+        </div>
+        <label for="rgName">Full name</label>
+        <input id="rgName" type="text" autocomplete="name" placeholder="Your full name">
+        <label for="rgEmail">E-mail</label>
+        <input id="rgEmail" type="email" autocomplete="email" placeholder="you@example.com">
+        <div class="grid2">
+          <div><label for="rgPass">Password</label>
+            <div class="pw"><input id="rgPass" type="password" autocomplete="new-password" placeholder="At least 8 characters"><button type="button" data-action="togglePw" data-for="rgPass">Show</button></div></div>
+          <div><label for="rgPass2">Confirm password</label>
+            <div class="pw"><input id="rgPass2" type="password" autocomplete="new-password" placeholder="Repeat password"><button type="button" data-action="togglePw" data-for="rgPass2">Show</button></div></div>
+        </div>
+        <div id="codeBox" class="hidden">
+          <label for="rgCode">Staff registration code</label>
+          <input id="rgCode" type="password" autocomplete="off" placeholder="Given to you by your department">
+        </div>
+        <div class="formerr" id="rgErr"></div>
+        <p style="margin:6px 0 0"><button id="registerBtn" data-action="register" style="width:100%">Create account</button></p>
+        <p class="switch">Already registered? <a data-action="authTab" data-tab="login">Sign in</a></p>
+      </div>
     </div>
   </section>
 
@@ -160,8 +213,11 @@
       <div class="card">
         <h2>📸 Report garbage</h2>
         <p class="muted small" style="margin-top:0">Submit a geotagged photo link. The AI rates how severe the garbage is.</p>
-        <label for="photoUrl">Photo URL</label>
-        <input id="photoUrl" type="url" placeholder="https://…/garbage.jpg">
+        <label for="photoFile">Photo</label>
+        <input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+        <img id="photoPreview" class="hidden" alt="Selected photo preview" style="max-width:100%;max-height:220px;border-radius:10px;margin-top:10px;display:block">
+        <details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">…or use a photo link instead</summary>
+          <input id="photoUrl" type="url" placeholder="https://…/garbage.jpg" style="margin-top:8px"></details>
         <div class="grid2">
           <div><label for="lat">Latitude</label><input id="lat" type="number" step="any" placeholder="28.6692"></div>
           <div><label for="lng">Longitude</label><input id="lng" type="number" step="any" placeholder="77.4538"></div>
@@ -297,7 +353,7 @@ function show() {
   ['loginView', 'citizenView', 'workerView', 'officerView'].forEach((v) => $(v).classList.add('hidden'));
   const loggedIn = !!state.user;
   $('userChip').classList.toggle('hidden', !loggedIn); $('logoutBtn').classList.toggle('hidden', !loggedIn);
-  if (!loggedIn) { $('loginView').classList.remove('hidden'); pickRole(state.role); return; }
+  if (!loggedIn) { $('loginView').classList.remove('hidden'); return; }
   $('userChip').textContent = `${state.user.name || state.user.email} · ${state.user.role}`;
   const view = { CITIZEN: 'citizenView', WORKER: 'workerView', OFFICER: 'officerView' }[state.user.role];
   $(view).classList.remove('hidden');
@@ -317,16 +373,46 @@ function pickRole(role) {
   document.querySelectorAll('#roleBtns button').forEach((b) => b.classList.toggle('active', b.dataset.role === role));
   $('codeBox').classList.toggle('hidden', role === 'CITIZEN');
 }
+function authTab(tab) {
+  const login = tab === 'login';
+  $('loginForm').classList.toggle('hidden', !login); $('registerForm').classList.toggle('hidden', login);
+  document.querySelectorAll('#authTabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  $('liErr').textContent = ''; $('rgErr').textContent = '';
+}
+function togglePw(id, btn) {
+  const el = $(id); const show = el.type === 'password';
+  el.type = show ? 'text' : 'password'; btn.textContent = show ? 'Hide' : 'Show';
+}
+function startSession(r) {
+  state.token = r.token; state.user = { userId: r.userId, name: r.name, email: r.email, role: r.role };
+  saveSession(); show();
+}
 async function doLogin() {
-  const email = $('email').value.trim();
-  if (!email) return toast('Enter your e-mail.', true);
+  const email = $('liEmail').value.trim(), password = $('liPass').value;
+  $('liErr').textContent = '';
+  if (!email || !password) { $('liErr').textContent = 'Enter your e-mail and password.'; return; }
   $('loginBtn').disabled = true;
-  try {
-    const r = await post('/api/auth/login', { email, name: $('name').value.trim(), role: state.role, accessCode: $('accessCode').value });
-    state.token = r.token; state.user = { userId: r.userId, name: r.name, email: r.email, role: r.role };
-    saveSession(); $('accessCode').value = ''; show();
-  } catch (e) { toast(e.message, true); }
+  try { startSession(await post('/api/auth/login', { email, password })); $('liPass').value = ''; }
+  catch (e) { $('liErr').textContent = e.message; }
   finally { $('loginBtn').disabled = false; }
+}
+async function doRegister() {
+  const name = $('rgName').value.trim(), email = $('rgEmail').value.trim();
+  const password = $('rgPass').value, again = $('rgPass2').value;
+  const err = $('rgErr'); err.textContent = '';
+  if (!name) { err.textContent = 'Enter your full name.'; return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = 'Enter a valid e-mail address.'; return; }
+  if (password.length < 8) { err.textContent = 'Password must be at least 8 characters.'; return; }
+  if (password !== again) { err.textContent = 'The two passwords do not match.'; return; }
+  const accessCode = $('rgCode').value;
+  if (state.role !== 'CITIZEN' && !accessCode) { err.textContent = 'Enter the staff registration code.'; return; }
+  $('registerBtn').disabled = true;
+  try {
+    startSession(await post('/api/auth/register', { name, email, password, role: state.role, accessCode: state.role === 'CITIZEN' ? '' : accessCode }));
+    ['rgPass', 'rgPass2', 'rgCode'].forEach((i) => { $(i).value = ''; });
+    toast('Account created. Welcome, ' + name.split(' ')[0] + '!');
+  } catch (e) { err.textContent = e.message; }
+  finally { $('registerBtn').disabled = false; }
 }
 
 /* ---------- citizen ---------- */
@@ -337,17 +423,38 @@ async function loadCitizen() {
     mine.map((c) => `<tr><td>${esc(c.complaintId)}</td><td>${esc(c.garbageType)}</td><td>${sev(c.severity)}</td><td>${badge(c.status)}</td><td>${fmtTime(c.createdAt)}</td></tr>`),
     'No reports yet — file your first one!');
 }
+async function uploadPhoto(file) {
+  const fd = new FormData(); fd.append('file', file);
+  let res;
+  try { res = await fetch(BASE + '/api/uploads', { method: 'POST', headers: { Authorization: 'Bearer ' + state.token }, body: fd }); }
+  catch (e) { throw new Error('Cannot reach the server. Is the backend running?'); }
+  let data = null; try { data = await res.json(); } catch (_) { /* empty body */ }
+  if (!res.ok) {
+    if (res.status === 401) { logout(true); throw new Error('Session expired. Please sign in again.'); }
+    throw new Error((data && data.message) || 'Photo upload failed');
+  }
+  return data.url;
+}
+function previewPhoto() {
+  const f = $('photoFile').files[0], img = $('photoPreview');
+  if (!f) { img.classList.add('hidden'); return; }
+  img.src = URL.createObjectURL(f); img.classList.remove('hidden');
+}
 async function submitReport() {
-  const photoUrl = $('photoUrl').value.trim(), latitude = parseFloat($('lat').value), longitude = parseFloat($('lng').value);
-  if (!photoUrl || isNaN(latitude) || isNaN(longitude)) return toast('Photo URL, latitude and longitude are required.', true);
-  $('submitBtn').disabled = true;
+  const file = $('photoFile').files[0];
+  let photoUrl = $('photoUrl').value.trim();
+  const latitude = parseFloat($('lat').value), longitude = parseFloat($('lng').value);
+  if (!file && !photoUrl) return toast('Choose a photo (or paste a photo link).', true);
+  if (isNaN(latitude) || isNaN(longitude)) return toast('Location is required. Press “Use my location”.', true);
+  $('submitBtn').disabled = true; $('submitBtn').textContent = 'Analysing photo…';
   try {
+    if (file) photoUrl = await uploadPhoto(file);
     const c = await post('/api/complaints', { photoUrl, latitude, longitude });
     $('reportResult').innerHTML = `<div class="result ok">Report #${esc(c.complaintId)} received · ${esc(c.garbageType)} · coverage ${esc(Math.round(c.boundingBoxAreaPct))}% · severity ${sev(c.severity)} · SLA ${sla(c)}${c.needsReview ? ' ' + badge('needs review', 'review') : ''}</div>`;
-    $('photoUrl').value = '';
+    $('photoUrl').value = ''; $('photoFile').value = ''; previewPhoto();
     await loadCitizen();
   } catch (e) { toast(e.message, true); }
-  finally { $('submitBtn').disabled = false; }
+  finally { $('submitBtn').disabled = false; $('submitBtn').textContent = 'Submit report'; }
 }
 async function useGpsForReport() {
   try { const g = await getGps(); $('lat').value = g.lat.toFixed(6); $('lng').value = g.lng.toFixed(6); toast(`Location captured (±${Math.round(g.accuracy)} m)`); }
@@ -476,6 +583,9 @@ document.addEventListener('click', (ev) => {
   switch (d.action) {
     case 'pickRole': pickRole(d.role); break;
     case 'login': doLogin(); break;
+    case 'register': doRegister(); break;
+    case 'authTab': authTab(d.tab); break;
+    case 'togglePw': togglePw(d.for, el); break;
     case 'logout': logout(); break;
     case 'useGps': useGpsForReport(); break;
     case 'submitReport': submitReport(); break;
@@ -489,7 +599,11 @@ document.addEventListener('click', (ev) => {
     case 'runHotspots': runHotspots(); break;
   }
 });
-document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !$('loginView').classList.contains('hidden') && ev.target.tagName === 'INPUT') doLogin(); });
+document.addEventListener('change', (ev) => { if (ev.target && ev.target.id === 'photoFile') previewPhoto(); });
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Enter' || $('loginView').classList.contains('hidden') || ev.target.tagName !== 'INPUT') return;
+  if ($('registerForm').classList.contains('hidden')) doLogin(); else doRegister();
+});
 
 /* ---------- boot ---------- */
 (async function init() {

@@ -134,7 +134,7 @@ public class RoboflowService {
         return new DetectionResult(dominant, Math.round(coveragePct * 10) / 10.0, true);
     }
 
-    // Plausible, varied fake result so demo severities are not all identical.
+    // Deterministic offline stand-in (ROBOFLOW_MOCK=true): varied results so severities are not all identical.
     private DetectionResult mockDetection(String photoUrl) {
         String[] types = {"Plastic", "Organic", "Construction Debris", "Mixed", "E-Waste"};
         int hash = photoUrl == null ? 0 : photoUrl.hashCode();

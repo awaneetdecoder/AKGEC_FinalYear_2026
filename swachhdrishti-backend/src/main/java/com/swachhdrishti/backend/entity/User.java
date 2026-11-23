@@ -23,6 +23,10 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    // PBKDF2 hash of the password ("pbkdf2_sha256$iterations$salt$hash"). Never the password itself.
+    @Column(length = 200)
+    private String passwordHash;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 

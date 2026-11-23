@@ -4,9 +4,9 @@ The citizen-facing half of the platform described in the paper: **photograph gar
 
 | Screen | What it does |
 |---|---|
-| **Login** | E-mail + name (citizen account is created on first login). Hidden *Server settings* for the backend address |
+| **Sign in / Create account** | Citizens sign up with name, e-mail and password, then sign in with the same details. *Server settings* sets the backend address |
 | **Report** | Camera/gallery photo, live GPS (±accuracy shown), submit → instantly shows **severity 1-5, coverage %, target cleanup time** |
-| **My reports** | Live status (Received → Worker assigned → Cleaned / Reopened), pull-to-refresh, tap for details + photo |
+| **My reports** | Summary tiles, filters, status timeline (Received → Assigned → Cleaned / Reopened), pull-to-refresh, tap for details + photo |
 | **Rewards** | Clean Coins balance, reports filed, how rewards work, sign out |
 
 **Anti-spoofing:** the app refuses to file a report when Android reports a *mock/simulated location* (`Position.isMocked`), as described in the paper.
@@ -19,7 +19,7 @@ The citizen-facing half of the platform described in the paper: **photograph gar
 cd swachhdrishti-app
 
 # 1. generate the android/ and ios/ platform folders (keeps the existing lib/ and pubspec.yaml)
-flutter create . --project-name swachhdrishti_app --org edu.akgec
+flutter create . --project-name swachhdrishti_app --org com.swachhdrishti
 
 # 2. install packages
 flutter pub get
@@ -53,16 +53,27 @@ Add to `ios/Runner/Info.plist`:
 ```
 (iOS cannot reach a plain-`http` server by default; use an https URL or add an ATS exception for development.)
 
-## Connecting to the backend
+## Connecting the phone to the backend
 
-1. Start the backend (`mvn spring-boot:run -Dspring-boot.run.profiles=h2` in `../swachhdrishti-backend`).
-2. Server address on the login screen → *Server settings*:
-   - **Android emulator:** `http://10.0.2.2:8080` (the default)
-   - **Real phone on the same Wi-Fi:** `http://<your-PC-IP>:8080` (allow port 8080 through your firewall)
-3. Log in as any e-mail (e.g. `asha@example.com`) and file a report.
-4. Open the **Staff Portal** at `http://localhost:8080` as the demo worker/officer to see the complaint, claim it and verify the cleanup. Your Clean Coins appear after verification.
+Start the backend first (`mvn spring-boot:run "-Dspring-boot.run.profiles=h2"` in `..\swachhdrishti-backend`). The app **finds the server by itself** (green "Connected" bar on the sign-in screen). It tries these addresses:
 
-Photos are uploaded to the backend (`POST /api/uploads`) and the returned URL is stored with the complaint. In production you can instead upload to **Firebase Cloud Storage** (as in the paper) and send that URL to `POST /api/complaints`; the rest of the pipeline is unchanged.
+| How your phone is connected | Address the app uses | One-time setup |
+|---|---|---|
+| **USB cable (recommended)** | `http://127.0.0.1:8080` | run `adb reverse tcp:8080 tcp:8080` (see below). No Wi-Fi or firewall needed |
+| Android emulator | `http://10.0.2.2:8080` | none |
+| Same Wi-Fi as the PC | `http://<PC-IP>:8080` | allow port 8080 in Windows Firewall; type the address under *Server settings* |
+
+### USB setup (3 commands, PowerShell)
+```powershell
+$env:Path += ";$env:LOCALAPPDATA\Android\Sdk\platform-tools"
+adb devices
+adb reverse tcp:8080 tcp:8080
+```
+`adb devices` must list your phone as `device` (not `unauthorized`: accept the prompt on the phone). Re-run `adb reverse ...` after you re-plug the cable or restart the PC. If the app still says it cannot reach the server, tap the red bar on the sign-in screen to search again.
+
+> "The server took too long to respond" almost always means the app is pointing at an address the phone cannot reach (for example `10.0.2.2` on a real phone). Use the USB setup above.
+
+Photos are uploaded to the backend (`POST /api/uploads`) and shown through `GET /uploads/<id>.jpg`; the complaint stores that URL. In production you can upload to Firebase Cloud Storage instead and send that URL to `POST /api/complaints`.
 
 > For the **real** Roboflow model the photo URL must be reachable from the internet, so deploy the backend publicly (or use a tunnel such as ngrok) or use cloud storage.
 
@@ -76,10 +87,12 @@ flutter analyze
 ```
 lib/
 ├── main.dart                 # theme + login/app gate
+├── theme.dart                # brand colours + light/dark Material 3 theme
+├── widgets.dart              # shared UI (SoftCard, severity ring, status chip/timeline)
 ├── api.dart                  # REST client, session storage, photo upload
 ├── models.dart               # Complaint, Profile, severity colours
 └── screens/
-    ├── login_screen.dart
+    ├── auth_screen.dart      # sign in / create account
     ├── home_screen.dart      # bottom navigation + data loading
     ├── report_screen.dart    # camera + GPS + submit + AI result
     ├── reports_screen.dart   # my reports + detail sheet

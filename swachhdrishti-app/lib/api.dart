@@ -21,8 +21,10 @@ class ApiException implements Exception {
 
 /// Login state, kept in memory and mirrored to SharedPreferences.
 class Session {
-  /// 10.0.2.2 is how the Android emulator reaches the computer running the server.
-  /// On a real phone, change it on the login screen to e.g. http://192.168.1.20:8080
+  /// 10.0.2.2 reaches the PC from the Android emulator. A phone on USB uses
+  /// http://127.0.0.1:8080 after `adb reverse tcp:8080 tcp:8080`. A phone on
+  /// Wi-Fi uses the PC's address, e.g. http://192.168.1.20:8080. The app finds
+  /// the right one by itself (see Api.findServer).
   static const defaultBaseUrl = 'http://10.0.2.2:8080';
 
   static String baseUrl = defaultBaseUrl;
@@ -31,6 +33,13 @@ class Session {
   static String? email;
 
   static bool get isLoggedIn => token != null;
+
+  /// First word of the user's name, for greetings.
+  static String get firstName {
+    final n = (name ?? '').trim();
+    if (n.isEmpty) return 'there';
+    return n.split(RegExp(r'\s+')).first;
+  }
 
   static Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -46,6 +55,13 @@ class Session {
     if (token != null) await p.setString('token', token!);
     if (name != null) await p.setString('name', name!);
     if (email != null) await p.setString('email', email!);
+  }
+
+  /// Changes the server address and remembers it.
+  static Future<void> setBaseUrl(String url) async {
+    baseUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
+    final p = await SharedPreferences.getInstance();
+    await p.setString('baseUrl', baseUrl);
   }
 
   static Future<void> clear() async {
@@ -75,13 +91,21 @@ class Api {
           : await http.get(uri, headers: headers).timeout(_timeout);
       return await _decode(res);
     } on TimeoutException {
-      throw ApiException('The server took too long to respond. Please try again.');
+      throw ApiException(_unreachable());
     } on SocketException {
-      throw ApiException('Cannot reach the server at ${Session.baseUrl}. Check the address and your connection.');
+      throw ApiException(_unreachable());
     } on http.ClientException {
-      throw ApiException('Cannot reach the server at ${Session.baseUrl}. Check the address and your connection.');
+      throw ApiException(_unreachable());
     }
   }
+
+  /// A message that says what to do, not just that it failed.
+  static String _unreachable() =>
+      'Cannot reach the server at ${Session.baseUrl}.\n'
+      '• USB phone: run  adb reverse tcp:8080 tcp:8080  and use http://127.0.0.1:8080\n'
+      '• Wi-Fi phone: use your PC\'s IP, e.g. http://192.168.1.20:8080\n'
+      '• Emulator: use http://10.0.2.2:8080\n'
+      'Make sure the backend is running.';
 
   static Future<dynamic> _decode(http.Response res) async {
     dynamic data;
@@ -103,13 +127,58 @@ class Api {
     return data;
   }
 
+  /// True if the server at [baseUrl] answers its health check.
+  static Future<bool> ping(String baseUrl, {Duration timeout = const Duration(seconds: 6)}) async {
+    try {
+      final url = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+      final res = await http.get(Uri.parse('$url/actuator/health')).timeout(timeout);
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Tries the saved address, the USB address and the emulator address together
+  /// and returns the first that answers, or null if none does.
+  static Future<String?> findServer() async {
+    final candidates = <String>{Session.baseUrl, 'http://127.0.0.1:8080', 'http://10.0.2.2:8080'}.toList();
+    final results = await Future.wait(
+      candidates.map((u) => ping(u, timeout: const Duration(seconds: 3))),
+    );
+    for (var i = 0; i < candidates.length; i++) {
+      if (results[i]) return candidates[i];
+    }
+    return null;
+  }
+
   // ---- auth ----
-  static Future<void> login({required String email, required String name}) async {
+
+  /// Sign in with the e-mail and password used at sign-up.
+  static Future<void> login({required String email, required String password}) async {
     final data = await _request('POST', '/api/auth/login', body: {
       'email': email,
-      'name': name,
-      'role': 'CITIZEN',
+      'password': password,
     }) as Map<String, dynamic>;
+    await _startSession(data);
+  }
+
+  /// Create a citizen account and sign in. (Workers and officers register on the web portal.)
+  static Future<void> register({required String name, required String email, required String password}) async {
+    final data = await _request('POST', '/api/auth/register', body: {
+      'name': name,
+      'email': email,
+      'password': password,
+      'role': 'CITIZEN',
+      'accessCode': '',
+    }) as Map<String, dynamic>;
+    await _startSession(data);
+  }
+
+  static Future<void> _startSession(Map<String, dynamic> data) async {
+    final role = (data['role'] as String?) ?? '';
+    if (role != 'CITIZEN') {
+      throw ApiException('This is a staff account. Please sign in on the web portal instead.');
+    }
     Session.token = data['token'] as String;
     Session.name = data['name'] as String?;
     Session.email = data['email'] as String?;
@@ -150,11 +219,11 @@ class Api {
       final data = await _decode(res) as Map<String, dynamic>;
       return data['url'] as String;
     } on TimeoutException {
-      throw ApiException('Photo upload timed out. Please try again on a better connection.');
+      throw ApiException('Photo upload timed out. Check the connection to the server and try again.');
     } on SocketException {
-      throw ApiException('Cannot reach the server at ${Session.baseUrl}.');
+      throw ApiException(_unreachable());
     } on http.ClientException {
-      throw ApiException('Cannot reach the server at ${Session.baseUrl}.');
+      throw ApiException(_unreachable());
     }
   }
 

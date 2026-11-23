@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'api.dart';
+import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
+import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,18 +16,18 @@ class SwachhApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFF0F7A4A);
     return MaterialApp(
       title: 'SwachhDrishti',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: seed, useMaterial3: true),
-      darkTheme: ThemeData(colorSchemeSeed: seed, brightness: Brightness.dark, useMaterial3: true),
+      theme: buildTheme(Brightness.light),
+      darkTheme: buildTheme(Brightness.dark),
+      themeMode: ThemeMode.system,
       home: const RootGate(),
     );
   }
 }
 
-/// Shows the login screen or the app depending on whether a token is stored.
+/// Shows the sign-in / sign-up screen or the app, depending on whether a token is stored.
 class RootGate extends StatefulWidget {
   const RootGate({super.key});
 
@@ -46,6 +47,6 @@ class _RootGateState extends State<RootGate> {
   Widget build(BuildContext context) {
     return _loggedIn
         ? HomeScreen(onLogout: _logout)
-        : LoginScreen(onLoggedIn: () => setState(() => _loggedIn = true));
+        : AuthScreen(onAuthenticated: () => setState(() => _loggedIn = true));
   }
 }

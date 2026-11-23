@@ -20,7 +20,9 @@ void main() {
     });
     expect(c.id, 7);
     expect(c.slaLabel, 'Immediate dispatch');
-    expect(c.statusLabel, 'Reopened');
+    expect(c.statusText, 'Reopened');
+    expect(c.isOpen, isTrue);
+    expect(c.isDone, isFalse);
     expect(c.slaDueAt, isNotNull);
     expect(c.coveragePct, closeTo(63.4, 1e-9));
   });
@@ -29,5 +31,20 @@ void main() {
     final p = Profile.fromJson({'name': 'Asha', 'email': 'a@x.in'});
     expect(p.cleanCoins, 0);
     expect(p.totalReports, 0);
+  });
+
+  test('Reward levels follow the coin balance', () {
+    expect(rewardLevel(0).name, 'Green Starter');
+    expect(rewardLevel(29).name, 'Green Starter');
+    expect(rewardLevel(30).name, 'Eco Hero');
+    expect(rewardLevel(99).name, 'Eco Hero');
+    expect(rewardLevel(100).name, 'City Champion');
+  });
+
+  test('Severity words and status labels', () {
+    expect(severityWord(1), 'Minor');
+    expect(severityWord(5), 'Critical');
+    expect(statusLabel('CLEANED'), 'Cleaned');
+    expect(statusLabel('PENDING'), 'Received');
   });
 }

@@ -21,7 +21,7 @@
 ![Classes](https://img.shields.io/badge/Waste_classes-20-blue?style=flat-square)
 ![Tests](https://img.shields.io/badge/Unit_tests-23-success?style=flat-square)
 
-**Final-year project · Department of Information Technology · Ajay Kumar Garg Engineering College (AKGEC), Ghaziabad · 2026**
+**Final-year project · Department of Information Technology · 2026**
 
 [Quick start](#-quick-start) · [How it works](#-how-it-works) · [Citizen app](#-citizen-app-flutter) · [Staff Portal](#-staff-portal) · [API](#-api-reference) · [Research paper](docs/SwachhDrishti_IEEE_Paper.docx)
 
@@ -195,25 +195,26 @@ Complaint lifecycle: `PENDING → ASSIGNED → CLEANED → (REOPENED → ASSIGNE
 
 ## 🚀 Quick start
 
-**Prerequisites:** JDK 17+ and Maven 3.9+. (MySQL or Docker only for the non-demo options.)
+> 📘 **Setting this up on a new PC?** Follow the step-by-step **[Setup Guide](docs/SETUP_GUIDE.md)** (installs, commands, logins, troubleshooting).
 
-### Option A — 2-minute demo (no database needed) ⭐
+**Prerequisites:** JDK 17+ and Maven 3.9+. (MySQL or Docker only for the options below that use them.)
 
-```bash
+### Option A — 2-minute start (no database needed) ⭐
+
+```powershell
 git clone https://github.com/awaneetdecoder/AKGEC_FinalYear_2026.git
 cd AKGEC_FinalYear_2026/swachhdrishti-backend
-mvn spring-boot:run -Dspring-boot.run.profiles=h2
+mvn spring-boot:run "-Dspring-boot.run.profiles=h2"
 ```
 
-Open **http://localhost:8080** – the Staff Portal loads with demo accounts and ~40 sample complaints in five clusters.
+Open **http://localhost:8080** and click **Create account**. Everyone signs up themselves and later signs in with the same e-mail and password:
 
-| Role | E-mail | Extra |
-|---|---|---|
-| Citizen | `citizen@swachh.demo` | – |
-| Worker | `worker@swachh.demo` | staff code `swachh-staff-2026` |
-| Officer | `officer@swachh.demo` | staff code `swachh-staff-2026` |
+| Role | Sign-up needs |
+|---|---|
+| Citizen | name, e-mail, password |
+| Worker / Officer | the above **plus the staff registration code**. With the `h2` profile the code is `swachh-staff-2026` (override with `STAFF_ACCESS_CODE`) |
 
-> The `h2` profile uses an in-memory database that resets on every restart, turns on **demo mode** and keeps AI detection **mocked**.
+> The `h2` profile uses an in-memory database that resets on every restart, and supplies local-only defaults for `JWT_SECRET` and `STAFF_ACCESS_CODE`. AI detection uses the offline stand-in unless you configure Roboflow. Want placeholder complaints so the hotspot view has data? Set `SEED_SAMPLE_DATA=true` first (test data, off by default).
 
 ### Option B — MySQL
 
@@ -256,7 +257,7 @@ cd swachhdrishti-app
 flutter create . --project-name swachhdrishti_app   # generates android/ + ios/
 flutter pub get
 # add camera/location permissions - see swachhdrishti-app/README.md
-flutter run                                         # emulator reaches the backend at http://10.0.2.2:8080
+flutter run                                         # USB phone: first run  adb reverse tcp:8080 tcp:8080
 ```
 
 Full setup, permissions and the phone-on-Wi-Fi instructions are in [`swachhdrishti-app/README.md`](swachhdrishti-app/README.md).
@@ -269,11 +270,9 @@ Served by Spring Boot at **`/`** – one dependency-free HTML/CSS/JS file, no No
 
 | Role | What you get |
 |---|---|
-| 🧑 **Citizen** *(stand-in for the Flutter app)* | Report garbage (photo URL + GPS), see severity/SLA instantly, track your reports and 🪙 Clean Coins |
+| 🧑 **Citizen** *(web version of the mobile app)* | Report garbage (camera/photo + GPS), see severity/SLA instantly, track your reports and 🪙 Clean Coins |
 | 🧹 **Worker** | Severity-ranked job queue, **Claim** a job, **Mark cleaned** with live GPS → server geofence verdict with distance |
 | 🏛️ **Officer** | Live counters, priority queue (reopened tickets first), **K-Means hotspots**, **chronic zones**, **cleanup log** incl. rejected attempts, buttons to run the 72-h check / hotspot job on demand |
-
-In **demo mode** the worker panel also has *"Simulate: standing at the zone / 500 m away"* buttons so you can show the geofence working from a laptop. These are hidden when `DEMO_MODE=false`.
 
 Hosting the portal elsewhere? Open `index.html?api=https://your-server:8080` and set `CORS_ORIGINS`.
 
@@ -286,16 +285,16 @@ Everything is overridable by environment variable – **no secrets live in Git**
 | Variable | Default | Meaning |
 |---|---|---|
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | local MySQL / `root` / *(empty)* | Database connection |
-| `JWT_SECRET` | dev placeholder | HMAC key, **≥ 32 chars** (app refuses to start otherwise). **Always override.** |
+| `JWT_SECRET` | *(none)* | **Required**, ≥ 32 chars (the app refuses to start otherwise). The `h2` profile provides a local-only default |
 | `JWT_EXPIRY_HOURS` | `24` | Token lifetime |
-| `STAFF_ACCESS_CODE` | `swachh-staff-2026` | Required to log in as WORKER / OFFICER. Empty = staff login disabled |
+| `STAFF_ACCESS_CODE` | *(empty)* | Registration code for WORKER / OFFICER sign-up. Empty = staff registration closed |
 | `ROBOFLOW_MOCK` | `true` | `false` to call the real model |
 | `ROBOFLOW_API_KEY`, `ROBOFLOW_MODEL_URL` | – | Your hosted model |
 | `ROBOFLOW_TIMEOUT_MS` | `3000` | Per-phase timeout before the fallback kicks in |
 | `ROBOFLOW_CONFIDENCE` | `0.495` | Minimum detection confidence (F1-optimal on the validation set) |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed browser origins for `/api/**` |
 | `UPLOAD_DIR` | `uploads` | Where uploaded photos are stored on disk |
-| `DEMO_MODE` | `false` | Seeds demo data + enables GPS simulation. **Never in production.** |
+| `SEED_SAMPLE_DATA` | `false` | Adds ~40 placeholder complaints for the hotspot view. Test data only |
 
 Job tuning (in `application.properties`): `app.repeat-monitor.{window-hours,radius-meters,interval-ms,chronic-threshold}`, `app.hotspot.{k,min-complaints,interval-ms}`.
 
@@ -303,13 +302,13 @@ Job tuning (in `application.properties`): `app.repeat-monitor.{window-hours,radi
 
 ## 📡 API reference
 
-All `/api/**` endpoints except login and `/api/public/**` need `Authorization: Bearer <token>`. Errors are always `{"status": 4xx, "message": "…"}`.
+All `/api/**` endpoints except sign-in and sign-up need `Authorization: Bearer <token>`. Errors are always `{"status": 4xx, "message": "…"}`.
 
 | Method | Endpoint | Role | Description |
 |---|---|---|---|
-| `POST` | `/api/auth/login` | public | Log in / register → JWT. Body: `email`, `name`, `role`, `accessCode` *(staff only)* |
+| `POST` | `/api/auth/register` | public | Create an account → JWT. Body: `name`, `email`, `password` (≥ 8), `role`, `accessCode` *(staff only)* |
+| `POST` | `/api/auth/login` | public | Sign in with `email` + `password` → JWT (role comes from the account) |
 | `GET` | `/api/auth/me` | any | Profile, Clean Coins, report count |
-| `GET` | `/api/public/config` | public | `{demoMode, aiMock}` |
 | `POST` | `/api/uploads` | CITIZEN | Multipart photo upload (`file`) → `{url}` to use in the complaint |
 | `POST` | `/api/complaints` | CITIZEN | Submit `{photoUrl, latitude, longitude}` → AI + severity pipeline (`201`) |
 | `GET` | `/api/complaints/mine` | CITIZEN | My reports |
@@ -330,14 +329,15 @@ All `/api/**` endpoints except login and `/api/public/**` need `Authorization: B
 
 ## 🧪 Try the whole flow with curl
 
-With the server running in demo mode (`-Dspring-boot.run.profiles=h2`):
+With the server running (`mvn spring-boot:run "-Dspring-boot.run.profiles=h2"`):
 
 ```bash
 H='Content-Type: application/json'; API=http://localhost:8080/api
 
-# 1. log in as a citizen and a worker
-CIT=$(curl -s $API/auth/login -H "$H" -d '{"email":"citizen@swachh.demo","role":"CITIZEN"}' | jq -r .token)
-WRK=$(curl -s $API/auth/login -H "$H" -d '{"email":"worker@swachh.demo","role":"WORKER","accessCode":"swachh-staff-2026"}' | jq -r .token)
+# 1. create a citizen and a worker account (staff need the registration code)
+CIT=$(curl -s $API/auth/register -H "$H" -d '{"name":"Asha","email":"asha@example.com","password":"Str0ng-pass-1","role":"CITIZEN"}' | jq -r .token)
+WRK=$(curl -s $API/auth/register -H "$H" -d '{"name":"Ravi","email":"ravi@example.com","password":"Str0ng-pass-2","role":"WORKER","accessCode":"swachh-staff-2026"}' | jq -r .token)
+# (later: sign in with the same details)  curl -s $API/auth/login -H "$H" -d '{"email":"asha@example.com","password":"Str0ng-pass-1"}'
 
 # 2. citizen reports garbage
 ID=$(curl -s $API/complaints -H "$H" -H "Authorization: Bearer $CIT" \
@@ -431,12 +431,13 @@ mvn verify          # unit tests + full-stack API test on in-memory H2
 ## 🔐 Security notes
 
 - **No secrets in Git.** DB password, JWT secret, staff code and API keys come from environment variables.
-- **Staff roles can't be self-declared.** Workers/officers must supply the staff access code on every login; a citizen account can never log in as staff.
+- **Real accounts.** Everyone signs up with e-mail + password (stored only as salted PBKDF2 hashes) and signs in with the same details.
+- **Staff roles can't be self-declared.** Workers/officers need the staff registration code at sign-up; a citizen account can never become staff.
 - **Role checks on every endpoint** (officer data is officer-only; citizens see only their own complaints).
 - **Geofence runs on the server**, and rejected attempts are stored as evidence.
-- The login is a deliberate **stand-in for Firebase Auth** (no passwords). Upgrade path: replace the body of `AuthService.login` with `FirebaseAuth.verifyIdToken(...)`; everything downstream stays unchanged.
+- Auth is self-issued JWT. To move to Firebase Auth later, replace the bodies of `AuthService.register/login`; everything downstream stays unchanged.
 - **Known limitation (from the paper):** a browser can't detect spoofed GPS, so a worker using the web portal could fake coordinates. Planned fix: a native worker app that reads Android's mock-location flag + server-side plausibility checks. Per the paper, the Flutter citizen app reads Android's `isFromMockProvider` flag and rejects simulated coordinates (that app lives outside this repo).
-- Set `CORS_ORIGINS` to your real front-end URL and keep `DEMO_MODE=false` in production.
+- Set `CORS_ORIGINS` to your real front-end URL and keep `SEED_SAMPLE_DATA=false` in production and choose a strong `STAFF_ACCESS_CODE`.
 
 ---
 
@@ -445,7 +446,7 @@ mvn verify          # unit tests + full-stack API test on in-memory H2
 | Component | Status |
 |---|---|
 | Spring Boot backend (all endpoints, jobs, auth) | ✅ Complete |
-| Staff Portal (worker + officer + citizen demo tab) | ✅ Complete |
+| Staff Portal (sign-up/sign-in, citizen, worker, officer views) | ✅ Complete |
 | YOLOv11 model (89.54 % mAP@0.5) | ✅ Trained · plug in via Roboflow env vars |
 | Flutter citizen app | ✅ Source complete in `swachhdrishti-app/` (not yet compiled/run on a device – see its README) |
 | Outdoor geofence field trials | ⏳ Planned |
@@ -459,12 +460,12 @@ mvn verify          # unit tests + full-stack API test on in-memory H2
 
 | | |
 |---|---|
-| **Awaneet Mishra** | Department of Information Technology, AKGEC |
-| **Devansh Gupta** | Department of Information Technology, AKGEC |
-| **Amit Kumar** | Department of Information Technology, AKGEC |
-| **Bhavya Jaiswal** | Department of Information Technology, AKGEC |
+| **Awaneet Mishra** | Department of Information Technology |
+| **Devansh Gupta** | Department of Information Technology |
+| **Amit Kumar** | Department of Information Technology |
+| **Bhavya Jaiswal** | Department of Information Technology |
 
-**Guide:** Dr. Sunil Kumar, Professor, Department of Information Technology, AKGEC, Ghaziabad.
+**Guide:** Dr. Sunil Kumar, Professor, Department of Information Technology.
 
 > *SwachhDrishti: A YOLOv11-Based Garbage Severity Classification and GPS-Verified Accountability Platform for Smart Indian Cities.* Full paper: [`docs/SwachhDrishti_IEEE_Paper.docx`](docs/SwachhDrishti_IEEE_Paper.docx)
 

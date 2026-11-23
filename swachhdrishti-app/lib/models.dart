@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
 
+/// Human-friendly name for a complaint status coming from the API.
+String statusLabel(String status) => switch (status) {
+      'PENDING' => 'Received',
+      'ASSIGNED' => 'Worker assigned',
+      'CLEANED' => 'Cleaned',
+      'REOPENED' => 'Reopened',
+      'CLOSED' => 'Closed',
+      _ => status,
+    };
+
 /// A garbage report, as returned by the SwachhDrishti API.
 class Complaint {
   final int id;
@@ -51,14 +61,10 @@ class Complaint {
   /// "48 h", "6 h" ... or "Immediate dispatch" for level 5.
   String get slaLabel => slaDeadlineHours == 0 ? 'Immediate dispatch' : '$slaDeadlineHours h';
 
-  String get statusLabel => switch (status) {
-        'PENDING' => 'Received',
-        'ASSIGNED' => 'Worker assigned',
-        'CLEANED' => 'Cleaned',
-        'REOPENED' => 'Reopened',
-        'CLOSED' => 'Closed',
-        _ => status,
-      };
+  String get statusText => statusLabel(status);
+
+  bool get isOpen => status == 'PENDING' || status == 'ASSIGNED' || status == 'REOPENED';
+  bool get isDone => status == 'CLEANED' || status == 'CLOSED';
 }
 
 /// Logged-in citizen's profile and reward balance.
@@ -78,7 +84,7 @@ class Profile {
       );
 }
 
-/// Same 5-colour scale as the Staff Portal.
+/// Same 5-colour scale as the web portal.
 Color severityColor(int level) => switch (level) {
       1 => const Color(0xFF2E9E5B),
       2 => const Color(0xFF8BB832),
@@ -87,9 +93,27 @@ Color severityColor(int level) => switch (level) {
       _ => const Color(0xFFD6322B),
     };
 
+String severityWord(int level) => switch (level) {
+      1 => 'Minor',
+      2 => 'Low',
+      3 => 'Moderate',
+      4 => 'High',
+      _ => 'Critical',
+    };
+
 Color statusColor(String status) => switch (status) {
       'CLEANED' || 'CLOSED' => const Color(0xFF1E8449),
       'REOPENED' => const Color(0xFFC0392B),
       'ASSIGNED' => const Color(0xFF2471A3),
       _ => const Color(0xFFB9770E),
     };
+
+/// Coins a citizen earns for one verified cleanup (matches the backend).
+const int kCoinsPerCleanup = 10;
+
+/// Reward level for a coin balance. Display only: derived from the balance.
+({String name, int from, int next}) rewardLevel(int coins) {
+  if (coins < 30) return (name: 'Green Starter', from: 0, next: 30);
+  if (coins < 100) return (name: 'Eco Hero', from: 30, next: 100);
+  return (name: 'City Champion', from: 100, next: 100);
+}
